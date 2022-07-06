@@ -355,8 +355,13 @@ public class SnapshotLifecycleStats implements Writeable, ToXContentObject {
             snapshotsTaken.inc();
         }
 
+        long failtime;
+        long currentime;
+        int yellowthreshold = 5;
+        int redthreshold = 24;
         void snapshotFailed() {
             snapshotsFailed.inc();
+            failtime = System.currentTimeMillis();
         }
 
         void snapshotDeleted() {
@@ -417,5 +422,11 @@ public class SnapshotLifecycleStats implements Writeable, ToXContentObject {
             return builder;
         }
     }
-
+    currentime = System.currentTimeMillis();
+    if (((currentime - failtime)/3600000) > yellowthreshold) {
+        System.out.println("\n\nYellow status! 5 hours since last Snapshot failure.\n\n");
+    }
+    else if (((currentime - failtime)/3600000) > redthreshold) {
+        System.out.println("\n\nRed status! 24 hours since last Snapshot failure.\n\n");
+    }
 }
