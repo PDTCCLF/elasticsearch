@@ -327,6 +327,7 @@ public class SnapshotLifecycleStats implements Writeable, ToXContentObject {
             this.snapshotsFailed.inc(snapshotsFailed);
             this.snapshotsDeleted.inc(deleted);
             this.snapshotDeleteFailures.inc(failedDeletes);
+            this.verifyLastSuccessTime(getSnapshotLastSuccessTime());
         }
 
         public SnapshotPolicyStats(StreamInput in) throws IOException {
@@ -355,13 +356,8 @@ public class SnapshotLifecycleStats implements Writeable, ToXContentObject {
             snapshotsTaken.inc();
         }
 
-        long failtime;
-        long currentime;
-        int yellowthreshold = 5;
-        int redthreshold = 24;
         void snapshotFailed() {
             snapshotsFailed.inc();
-            failtime = System.currentTimeMillis();
         }
 
         void snapshotDeleted() {
@@ -374,6 +370,11 @@ public class SnapshotLifecycleStats implements Writeable, ToXContentObject {
 
         public String getPolicyId() {
             return policyId;
+        }
+
+        public long getSnapshotLastSuccessTime() {
+            long stime = System.currentTimeMillis();
+            return stime;
         }
 
         @Override
@@ -421,12 +422,17 @@ public class SnapshotLifecycleStats implements Writeable, ToXContentObject {
             builder.field(SnapshotPolicyStats.SNAPSHOT_DELETION_FAILURES.getPreferredName(), snapshotDeleteFailures.count());
             return builder;
         }
-    }
-    currentime = System.currentTimeMillis();
-    if (((currentime - failtime)/3600000) > yellowthreshold) {
-        System.out.println("\n\nYellow status! 5 hours since last Snapshot failure.\n\n");
-    }
-    else if (((currentime - failtime)/3600000) > redthreshold) {
-        System.out.println("\n\nRed status! 24 hours since last Snapshot failure.\n\n");
+
+        void verifyLastSuccessTime(long stime){
+            long currentime = System.currentTimeMillis();
+            int yellowthreshold = 5;
+            int redthreshold = 24;
+            if (((currentime - stime)/3600000) > yellowthreshold) {
+                System.out.println("\n\nYellow status! 5 hours since latest Snapshot success.\n\n");
+            }
+            else if (((currentime - stime)/3600000) > redthreshold) {
+                System.out.println("\n\nRed status! 24 hours since latest Snapshot success.\n\n");
+            }
+        }
     }
 }
